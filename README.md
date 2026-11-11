@@ -48,7 +48,7 @@ Vercel mendeteksi Flask dari `requirements.txt` dan memakai `app` pada `app.py` 
 
 Catatan penting untuk Vercel:
 
-- Filesystem function hanya dapat ditulis di `/tmp`. Saat `VERCEL=1`, aplikasi otomatis memakai `/tmp/idb_rooms.db` dan `/tmp/uploads`.
+- Filesystem function hanya dapat ditulis di `/tmp`. Saat `VERCEL=1`, aplikasi otomatis memakai `/tmp/idb_rooms.db` dan `/tmp/uploads`, serta memaksa zona waktu `Asia/Makassar` (WITA).
 - Data SQLite dan dokumen unggahan bersifat **ephemeral**: hilang saat instance dingin/deploy ulang. Untuk produksi, gunakan database eksternal (PostgreSQL/Turso) dan object storage (Vercel Blob/S3).
 - `_write_lock` hanya menjamin serialisasi dalam satu instance. Untuk trafik multi-instance, pindahkan jaminan anti-overlap ke database (row lock/constraint).
 - `.vercelignore` mengecualikan `instance/`, `uploads/`, dan file runtime lain agar bundle tetap kecil.

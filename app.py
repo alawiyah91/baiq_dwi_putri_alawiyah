@@ -3,6 +3,7 @@ import os
 import secrets
 import sqlite3
 import threading
+import time as time_module
 from datetime import date, datetime, time, timedelta
 from functools import wraps
 
@@ -29,6 +30,9 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 ON_VERCEL = bool(os.environ.get("VERCEL"))
 if ON_VERCEL:
     # Vercel Functions hanya mengizinkan penulisan ke /tmp (ephemeral).
+    # Runtime Vercel memakai UTC; paksa zona waktu kampus (WITA).
+    os.environ["TZ"] = "Asia/Makassar"
+    time_module.tzset()
     DEFAULT_DB = "/tmp/idb_rooms.db"
     DEFAULT_UPLOADS = "/tmp/uploads"
 else:

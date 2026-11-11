@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% set admin_tab = 'audit' %}
+{% set action_labels = {
+  'booking_created': 'Reservasi dibuat',
+  'booking_failed': 'Alokasi gagal',
+  'reservation_approved': 'Reservasi disetujui',
+  'approval_failed': 'Approval gagal',
+  'reservation_rejected': 'Reservasi ditolak',
+  'reservation_cancelled': 'Reservasi dibatalkan',
+  'room_updated': 'Aturan ruang diubah'
+} %}
+{% block title %}Audit log · IDB Bali{% endblock %}
+
+{% block content %}
+<section class="page-head page-head-admin">
+  <div class="container">
+    <span class="section-kicker">Ruang kerja Sarpras</span>
+    <div class="page-head-row">
+      <div>
+        <h1>Audit log</h1>
+        <p>Setiap perubahan status mencatat aktor, waktu, dan alasan. Tidak ada perubahan senyap.</p>
+      </div>
+      <span class="role-chip">BR-04 · immutable trail</span>
+    </div>
+    {% include "_admin_tabs.html" %}
+  </div>
+</section>
+
+<section class="container dashboard-body">
+  <div class="audit-summary">
+    <div class="audit-summary-card">
+      <span class="audit-icon">◎</span>
+      <div><strong>{{ logs|length }}</strong><span>entri terbaru ditampilkan</span></div>
+    </div>
+    <div class="audit-summary-card">
+      <span class="audit-icon">⏱</span>
+      <div><strong>Waktu lokal</strong><span>seluruh jejak memakai WITA</span></div>
+    </div>
+    <div class="audit-summary-card">
+      <span class="audit-icon">✓</span>
+      <div><strong>Wajib alasan</strong><span>pembatalan, penolakan, perubahan aturan</span></div>
+    </div>
+  </div>
+
+  <div class="table-panel">
+    <div class="table-wrap">
+      <table class="data-table audit-table">
+        <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Aksi</th>
+            <th>Aktor</th>
+            <th>Kode booking</th>
+            <th>Detail</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in logs %}
+            <tr>
+              <td data-label="Waktu" class="td-nowrap">
+                <strong>{{ a.created_at|datetime_id }}</strong>
+                <span class="table-sub">WITA</span>
+              </td>
+              <td data-label="Aksi">
+                <span class="audit-action {{ 'is-danger' if 'failed' in a.action or 'rejected' in a.action else ('is-warning' if 'cancelled' in a.action else 'is-ok') }}">
+                  {{ action_labels.get(a.action, a.action|replace('_', ' ')|title) }}
+                </span>
+              </td>
+              <td data-label="Aktor">
+                <strong>{{ a.actor or 'Sistem' }}</strong>
+                <span class="table-sub">{{ role_labels[a.actor_role] if a.actor_role else '—' }}</span>
+              </td>
+              <td data-label="Kode">
+                {% if a.kode_booking %}
+                  <span class="mono">{{ a.kode_booking }}</span>
+                  <span class="table-sub">{{ a.room_kode }}</span>
+                {% else %}
+                  <span class="muted">—</span>
+                {% endif %}
+              </td>
+              <td data-label="Detail" class="td-detail">{{ a.detail }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5"><p class="muted-note">Audit log masih kosong.</p></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

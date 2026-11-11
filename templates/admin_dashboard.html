@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% set admin_tab = 'overview' %}
+{% block title %}Dashboard Sarpras · IDB Bali{% endblock %}
+
+{% block content %}
+<section class="page-head page-head-admin">
+  <div class="container">
+    <span class="section-kicker">Ruang kerja Sarpras</span>
+    <div class="page-head-row">
+      <div>
+        <h1>Operasional peminjaman</h1>
+        <p>Pantau alokasi, verifikasi permintaan, dan jaga integritas jadwal 28 ruang kampus.</p>
+      </div>
+      <span class="role-chip">Hari ini · {{ today_iso|tanggal_id }}</span>
+    </div>
+    {% include "_admin_tabs.html" %}
+  </div>
+</section>
+
+<section class="container dashboard-body">
+  <div class="stat-grid stat-grid-5">
+    <div class="stat-card stat-highlight">
+      <span class="stat-label">Aktif hari ini</span>
+      <strong>{{ stats.today }}</strong>
+      <span class="stat-note">slot terpakai / tertahan</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Menunggu verifikasi</span>
+      <strong>{{ stats.pending }}</strong>
+      <span class="stat-note">perlu keputusan</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Terkonfirmasi</span>
+      <strong>{{ stats.confirmed }}</strong>
+      <span class="stat-note">total alokasi</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Dibatalkan</span>
+      <strong>{{ stats.cancelled }}</strong>
+      <span class="stat-note">slot kembali terbuka</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Ruang aktif</span>
+      <strong>{{ stats.rooms }}</strong>
+      <span class="stat-note">2 lokasi kampus</span>
+    </div>
+  </div>
+
+  <div class="admin-overview-grid">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <span class="section-kicker">Antrean verifikasi</span>
+          <h2>Perlu tindakan</h2>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('main.admin_reservations', status='processing') }}">Lihat semua</a>
+      </div>
+
+      {% if pending %}
+        <div class="pending-list">
+          {% for r in pending %}
+            <div class="pending-card">
+              <div class="pending-main">
+                <div class="pending-title">
+                  <strong>{{ r.nama_ruang }} <span class="room-code small">{{ r.kode }}</span></strong>
+                  <span class="badge warning">Menunggu</span>
+                </div>
+                <p class="pending-meta">{{ r.pemohon }} · {{ role_labels[r.role_pemohon] }}{% if r.nim_nip %} · {{ r.nim_nip }}{% endif %}</p>
+                <p class="pending-meta">{{ r.tanggal|tanggal_id }} · {{ r.mulai }}–{{ r.selesai }} WITA · {{ r.jumlah_peserta }} peserta</p>
+                <p class="pending-purpose">{{ r.keperluan }}</p>
+                <div class="pending-tags">
+                  <span class="chip">{{ r.gedung }}</span>
+                  {% if r.dokumen %}
+                    <a class="chip chip-link" href="{{ url_for('main.download_document', filename=r.dokumen) }}">Dokumen terlampir</a>
+                  {% else %}
+                    <span class="chip chip-muted">Tanpa dokumen</span>
+                  {% endif %}
+                  <span class="chip chip-muted">{{ r.kode_booking }}</span>
+                </div>
+              </div>
+              <div class="pending-actions">
+                <form method="post" action="{{ url_for('main.approve_reservation', reservation_id=r.id) }}">
+                  <button class="btn btn-success btn-sm" type="submit">Setujui</button>
+                </form>
+                <details class="inline-details">
+                  <summary class="btn btn-outline btn-sm">Tolak</summary>
+                  <form method="post" action="{{ url_for('main.reject_reservation', reservation_id=r.id) }}" class="mini-form">
+                    <label class="field"><span>Alasan</span><textarea name="alasan" rows="2" required placeholder="Alasan penolakan"></textarea></label>
+                    <button class="btn btn-danger btn-sm btn-block" type="submit">Kirim</button>
+                  </form>
+                </details>
+                <a class="btn btn-ghost btn-sm" href="{{ url_for('main.reservation_detail', reservation_id=r.id) }}">Detail</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-inline">
+          <span class="empty-check">✓</span>
+          <div>
+            <strong>Tidak ada antrean</strong>
+            <p>Semua permintaan yang membutuhkan approval sudah diproses.</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <aside class="admin-side">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <span class="section-kicker">Utilisasi</span>
+            <h2>Ruang tersibuk</h2>
+          </div>
+        </div>
+        <div class="bar-list">
+          {% for b in busiest %}
+            {% set max_total = busiest[0].total if busiest and busiest[0].total > 0 else 1 %}
+            <div class="bar-item">
+              <div class="bar-head"><span>{{ b.kode }} · {{ b.nama }}</span><strong>{{ b.total }}</strong></div>
+              <div class="bar-track"><span style="width: {{ (b.total / max_total * 100)|round|int }}%"></span></div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <span class="section-kicker">Aktivitas</span>
+            <h2>Reservasi terbaru</h2>
+          </div>
+        </div>
+        <div class="mini-list">
+          {% for r in recent %}
+            {% set meta = status_meta[r.status] %}
+            <a class="mini-row" href="{{ url_for('main.reservation_detail', reservation_id=r.id) }}">
+              <span class="mini-dot dot-{{ meta.tone }}"></span>
+              <span class="mini-body">
+                <strong>{{ r.nama_ruang }}</strong>
+                <small>{{ r.pemohon }} · {{ r.tanggal|tanggal_short }} {{ r.mulai }}</small>
+              </span>
+              <span class="badge {{ meta.tone }} badge-xs">{{ meta.label }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

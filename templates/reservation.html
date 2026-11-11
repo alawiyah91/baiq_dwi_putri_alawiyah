@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% set meta = status_meta[reservation.status] %}
+{% block title %}Reservasi {{ reservation.kode_booking }} · IDB Bali{% endblock %}
+{% block body_class %}reservation-page{% endblock %}
+
+{% block content %}
+<section class="page-head page-head-compact no-print">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{{ url_for('main.dashboard') if not is_admin_user or reservation.user_id == current_user.id else url_for('main.admin_reservations') }}">{{ 'Reservasi saya' if not is_admin_user or reservation.user_id == current_user.id else 'Kelola reservasi' }}</a>
+      <span>/</span>
+      <span>{{ reservation.kode_booking }}</span>
+    </nav>
+    <div class="page-head-row">
+      <div>
+        <span class="section-kicker">Detail reservasi</span>
+        <h1>{{ reservation.nama_ruang }}</h1>
+        <p>{{ reservation.gedung }} · Lantai {{ reservation.lantai }} · {{ reservation.kode }}</p>
+      </div>
+      <div class="head-actions">
+        <span class="badge {{ meta.tone }} badge-lg">{{ meta.label }}</span>
+        <button class="btn btn-outline btn-sm" type="button" data-print>Cetak bukti</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container detail-layout">
+  <div class="detail-main">
+    <article class="panel proof-card">
+      <div class="proof-head">
+        <div class="proof-brand">
+          <span class="brand-mark brand-mark-logo"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo IDB Bali"></span>
+          <div>
+            <strong>Bukti Peminjaman Ruang</strong>
+            <small>Institut Desain &amp; Bisnis Bali</small>
+          </div>
+        </div>
+        <div class="proof-code">
+          <small>Kode booking</small>
+          <strong>{{ reservation.kode_booking }}</strong>
+        </div>
+      </div>
+
+      <div class="proof-status status-{{ meta.tone }}">
+        <span class="status-symbol">{{ '✓' if reservation.status == 'confirmed' else ('!' if reservation.status in ['processing', 'cancelled'] else '×') }}</span>
+        <div>
+          <strong>{{ meta.label }}</strong>
+          <p>
+            {% if reservation.status == 'confirmed' %}
+              Slot telah dialokasikan secara eksklusif. Bukti ini sah selama reservasi tidak dibatalkan.
+            {% elif reservation.status == 'processing' %}
+              Permintaan telah diterima. Slot ditahan sementara menunggu verifikasi Petugas Sarpras.
+            {% elif reservation.status == 'cancelled' %}
+              Reservasi telah dibatalkan. Slot dikembalikan ke ketersediaan umum.
+            {% else %}
+              Reservasi tidak berhasil. Slot tidak dialokasikan untuk permintaan ini.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="proof-grid">
+        <div class="proof-field">
+          <span>Ruang</span>
+          <strong>{{ reservation.nama_ruang }}</strong>
+          <small>{{ reservation.kode }} · {{ reservation.kategori }} · {{ reservation.kapasitas }} orang</small>
+        </div>
+        <div class="proof-field">
+          <span>Lokasi</span>
+          <strong>{{ reservation.gedung }}</strong>
+          <small>Lantai {{ reservation.lantai }}</small>
+        </div>
+        <div class="proof-field">
+          <span>Tanggal</span>
+          <strong>{{ reservation.tanggal|tanggal_id }}</strong>
+          <small>{{ reservation.mulai }}–{{ reservation.selesai }} WITA</small>
+        </div>
+        <div class="proof-field">
+          <span>Pemohon</span>
+          <strong>{{ reservation.pemohon }}</strong>
+          <small>{{ role_labels[reservation.role_pemohon] }}{% if reservation.nim_nip %} · {{ reservation.nim_nip }}{% endif %}</small>
+        </div>
+        <div class="proof-field proof-field-wide">
+          <span>Keperluan</span>
+          <strong>{{ reservation.keperluan }}</strong>
+          <small>{{ reservation.jumlah_peserta }} peserta</small>
+        </div>
+        <div class="proof-field">
+          <span>Dokumen</span>
+          {% if reservation.dokumen %}
+            <a class="doc-link" href="{{ url_for('main.download_document', filename=reservation.dokumen) }}">Unduh dokumen pendukung</a>
+          {% else %}
+            <strong class="muted">Tidak dilampirkan</strong>
+          {% endif %}
+        </div>
+        <div class="proof-field">
+          <span>Diajukan</span>
+          <strong>{{ reservation.created_at|datetime_id }}</strong>
+          <small>WITA</small>
+        </div>
+      </div>
+
+      {% if reservation.status == 'confirmed' %}
+        <div class="proof-qr">
+          <img src="{{ url_for('main.reservation_qr', reservation_id=reservation.id) }}" alt="QR verifikasi {{ reservation.kode_booking }}">
+          <div><strong>Pindai untuk verifikasi</strong><span>{{ reservation.kode_booking }}</span></div>
+        </div>
+      {% endif %}
+
+      {% if reservation.status == 'failed' and reservation.alasan_gagal %}
+        <div class="notice notice-danger">
+          <strong>Alasan kegagalan</strong>
+          <p>{{ reservation.alasan_gagal }}</p>
+        </div>
+      {% endif %}
+      {% if reservation.status == 'cancelled' and reservation.alasan_batal %}
+        <div class="notice notice-muted">
+          <strong>Alasan pembatalan</strong>
+          <p>{{ reservation.alasan_batal }}</p>
+        </div>
+      {% endif %}
+
+      <div class="proof-foot">
+        <div>
+          <span class="proof-note">Pindai QR untuk memverifikasi keaslian bukti ini.</span>
+          <a class="verify-link" href="{{ url_for('main.verify', kode=reservation.kode_booking) }}">{{ verify_url }}</a>
+        </div>
+        <div class="proof-legal">Dokumen dihasilkan sistem IDB Bali secara otomatis.</div>
+      </div>
+    </article>
+
+    <div class="panel timeline-panel no-print">
+      <div class="panel-head">
+        <div>
+          <span class="section-kicker">Jejak audit</span>
+          <h2>Riwayat status</h2>
+        </div>
+        <span class="muted-note">BR-04 · setiap perubahan tercatat</span>
+      </div>
+      {% if audits %}
+        <ol class="timeline">
+          {% for a in audits %}
+            <li>
+              <span class="timeline-dot"></span>
+              <div class="timeline-body">
+                <div class="timeline-top">
+                  <strong>{{ a.action|replace('_', ' ')|title }}</strong>
+                  <time>{{ a.created_at|datetime_id }}</time>
+                </div>
+                <p>{{ a.detail }}</p>
+                <small>{{ a.actor or 'Sistem' }}{% if a.actor_role %} · {{ role_labels[a.actor_role] }}{% endif %}</small>
+              </div>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="muted-note">Belum ada log audit untuk reservasi ini.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside class="detail-aside no-print">
+    {% if reservation.status == 'confirmed' %}
+      <div class="panel qr-panel">
+        <div class="qr-frame">
+          <img src="{{ url_for('main.reservation_qr', reservation_id=reservation.id) }}" alt="QR code verifikasi reservasi {{ reservation.kode_booking }}">
+        </div>
+        <h3>Bukti peminjaman siap</h3>
+        <p>Tunjukkan QR ini kepada petugas atau pindai untuk membuka halaman verifikasi publik.</p>
+        <a class="btn btn-primary btn-block" href="{{ url_for('main.reservation_qr', reservation_id=reservation.id) }}" download="qr-{{ reservation.kode_booking }}.png">Unduh QR</a>
+        <a class="btn btn-outline btn-block" href="{{ url_for('main.verify', kode=reservation.kode_booking) }}">Buka halaman verifikasi</a>
+      </div>
+    {% else %}
+      <div class="panel qr-panel qr-panel-muted">
+        <div class="qr-placeholder">{{ '!' if reservation.status in ['processing', 'cancelled'] else '×' }}</div>
+        <h3>{{ 'Menunggu persetujuan' if reservation.status == 'processing' else 'QR belum tersedia' }}</h3>
+        <p>
+          {% if reservation.status == 'processing' %}
+            QR dan bukti final akan aktif setelah Petugas Sarpras menyetujui reservasi ini.
+          {% elif reservation.status == 'cancelled' %}
+            Reservasi yang dibatalkan tidak memiliki bukti peminjaman aktif.
+          {% else %}
+            Alokasi gagal, sehingga sistem tidak menerbitkan bukti peminjaman.
+          {% endif %}
+        </p>
+        <a class="btn btn-outline btn-block" href="{{ url_for('main.index') }}">Cari slot lain</a>
+      </div>
+    {% endif %}
+
+    <div class="panel action-panel">
+      <h3>Tindakan</h3>
+      <div class="action-stack">
+        {% if is_admin_user and reservation.status == 'processing' %}
+          <form method="post" action="{{ url_for('main.approve_reservation', reservation_id=reservation.id) }}">
+            <button class="btn btn-success btn-block" type="submit">Setujui &amp; konfirmasi</button>
+          </form>
+          <details class="inline-details">
+            <summary class="btn btn-outline btn-block">Tolak reservasi</summary>
+            <form method="post" action="{{ url_for('main.reject_reservation', reservation_id=reservation.id) }}" class="mini-form">
+              <label class="field"><span>Alasan penolakan</span><textarea name="alasan" rows="3" required placeholder="Contoh: dokumen rekomendasi belum lengkap."></textarea></label>
+              <button class="btn btn-danger btn-block" type="submit">Kirim penolakan</button>
+            </form>
+          </details>
+        {% endif %}
+
+        {% if can_cancel and reservation.user_id == current_user.id %}
+          <details class="inline-details">
+            <summary class="btn btn-outline btn-block">Batalkan reservasi</summary>
+            <form method="post" action="{{ url_for('main.cancel_reservation', reservation_id=reservation.id) }}" class="mini-form">
+              <label class="field"><span>Alasan pembatalan</span><textarea name="alasan" rows="3" required placeholder="Contoh: jadwal kelas berubah."></textarea></label>
+              <button class="btn btn-danger btn-block" type="submit">Konfirmasi pembatalan</button>
+            </form>
+          </details>
+        {% endif %}
+
+        {% if can_cancel and is_admin_user and reservation.user_id != current_user.id %}
+          <details class="inline-details">
+            <summary class="btn btn-outline btn-block">Batalkan (Sarpras)</summary>
+            <form method="post" action="{{ url_for('main.cancel_reservation', reservation_id=reservation.id) }}" class="mini-form">
+              <label class="field"><span>Alasan pembatalan</span><textarea name="alasan" rows="3" required placeholder="Alasan operasional pembatalan."></textarea></label>
+              <button class="btn btn-danger btn-block" type="submit">Batalkan &amp; catat audit</button>
+            </form>
+          </details>
+        {% endif %}
+
+        {% if reservation.status in ['processing', 'confirmed'] and not can_cancel %}
+          <p class="muted-note">Batas waktu pembatalan mandiri sudah lewat atau reservasi sedang diproses lebih lanjut.</p>
+        {% endif %}
+
+        <a class="btn btn-ghost btn-block" href="{{ url_for('main.dashboard') if reservation.user_id == current_user.id else url_for('main.admin_reservations') }}">Kembali</a>
+      </div>
+    </div>
+
+    <div class="panel help-panel">
+      <h3>Butuh bantuan?</h3>
+      <p>Untuk kasus khusus atau perubahan mendesak, hubungi Unit Sarana &amp; Prasarana IDB Bali dengan menyertakan kode booking.</p>
+      <span class="help-code">{{ reservation.kode_booking }}</span>
+    </div>
+  </aside>
+</section>
+{% endblock %}

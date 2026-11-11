@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Daftar akun · IDB Bali{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<section class="auth-wrap">
+  <div class="container auth-grid">
+    <div class="auth-aside">
+      <span class="eyebrow eyebrow-light"><span class="pulse-dot"></span> Mulai dalam satu menit</span>
+      <h1>Ruang yang tepat, tanpa menunggu.</h1>
+      <p>Buat akun mahasiswa atau dosen/staf untuk mengakses seluruh ruang yang dapat dipinjam di Kampus IDB Bali.</p>
+      <div class="auth-stat-grid">
+        <div><strong>28</strong><span>ruang &amp; fasilitas</span></div>
+        <div><strong>2</strong><span>lokasi kampus</span></div>
+        <div><strong>≤ 2</strong><span>menit konfirmasi</span></div>
+        <div><strong>85%</strong><span>target reservasi mandiri</span></div>
+      </div>
+      <div class="auth-quote">
+        <p>“Status Integrity: konfirmasi hanya diberikan jika slot benar-benar berhasil dialokasikan di database.”</p>
+        <span>Product Principle · Release 1.0</span>
+      </div>
+    </div>
+
+    <div class="auth-card">
+      <span class="section-kicker">Daftar</span>
+      <h2>Buat akun kampus</h2>
+      <p class="auth-sub">Isi data berikut. Petugas Sarpras akan memverifikasi reservasi yang membutuhkan approval.</p>
+
+      <form method="post" action="{{ url_for('main.register') }}" class="stack-form">
+        <label class="field">
+          <span>Nama lengkap</span>
+          <input type="text" name="nama" placeholder="Nama sesuai identitas kampus" required autofocus>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>Email kampus</span>
+            <input type="email" name="email" placeholder="nama@idb.ac.id" autocomplete="email" required>
+          </label>
+          <label class="field">
+            <span>NIM / NIP</span>
+            <input type="text" name="nim_nip" placeholder="Nomor identitas">
+          </label>
+        </div>
+        <label class="field">
+          <span>Peran</span>
+          <select name="role" required>
+            <option value="mahasiswa">Mahasiswa</option>
+            <option value="dosen">Dosen / Staf</option>
+          </select>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>Kata sandi</span>
+            <input type="password" name="password" placeholder="Minimal 6 karakter" autocomplete="new-password" required>
+          </label>
+          <label class="field">
+            <span>Ulangi kata sandi</span>
+            <input type="password" name="confirm" placeholder="Ulangi kata sandi" autocomplete="new-password" required>
+          </label>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Daftar &amp; mulai pesan</button>
+      </form>
+
+      <p class="auth-switch">Sudah punya akun? <a href="{{ url_for('main.login') }}">Masuk di sini</a></p>
+    </div>
+  </div>
+</section>
+{% endblock %}

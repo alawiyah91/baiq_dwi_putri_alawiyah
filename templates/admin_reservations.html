@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% set admin_tab = 'reservations' %}
+{% block title %}Kelola reservasi · IDB Bali{% endblock %}
+
+{% block content %}
+<section class="page-head page-head-admin">
+  <div class="container">
+    <span class="section-kicker">Ruang kerja Sarpras</span>
+    <div class="page-head-row">
+      <div>
+        <h1>Kelola reservasi</h1>
+        <p>Verifikasi permintaan, pantau konflik, dan catat setiap pembatalan dengan alasan.</p>
+      </div>
+      <span class="role-chip">{{ reservations|length }} catatan ditampilkan</span>
+    </div>
+    {% include "_admin_tabs.html" %}
+  </div>
+</section>
+
+<section class="container dashboard-body">
+  <form class="panel filter-bar" method="get" action="{{ url_for('main.admin_reservations') }}">
+    <label class="field">
+      <span>Status</span>
+      <select name="status">
+        <option value="">Semua status</option>
+        {% for key, meta in status_meta.items() %}
+          <option value="{{ key }}" {{ 'selected' if filters.status == key }}>{{ meta.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Gedung</span>
+      <select name="gedung">
+        <option value="">Semua gedung</option>
+        {% for b in buildings %}<option value="{{ b }}" {{ 'selected' if filters.gedung == b }}>{{ b }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Tanggal</span>
+      <input type="date" name="tanggal" value="{{ filters.tanggal }}">
+    </label>
+    <label class="field field-grow">
+      <span>Cari</span>
+      <input type="search" name="q" value="{{ filters.q }}" placeholder="Kode booking, nama pemohon, ruang, keperluan">
+    </label>
+    <div class="filter-actions">
+      <button class="btn btn-primary" type="submit">Terapkan</button>
+      <a class="btn btn-ghost" href="{{ url_for('main.admin_reservations') }}">Reset</a>
+    </div>
+  </form>
+
+  <div class="table-panel">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Kode &amp; status</th>
+            <th>Ruang</th>
+            <th>Waktu</th>
+            <th>Pemohon</th>
+            <th>Keperluan</th>
+            <th class="th-actions">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in reservations %}
+            {% set meta = status_meta[r.status] %}
+            <tr>
+              <td data-label="Kode">
+                <strong class="mono">{{ r.kode_booking }}</strong>
+                <span class="badge {{ meta.tone }} badge-xs">{{ meta.label }}</span>
+                {% if r.dokumen %}
+                  <a class="table-sub" href="{{ url_for('main.download_document', filename=r.dokumen) }}">Dokumen</a>
+                {% endif %}
+              </td>
+              <td data-label="Ruang">
+                <strong>{{ r.nama_ruang }}</strong>
+                <span class="table-sub">{{ r.kode }} · {{ r.gedung }} · Lt. {{ r.lantai }}</span>
+              </td>
+              <td data-label="Waktu">
+                <strong>{{ r.tanggal|tanggal_short }}</strong>
+                <span class="table-sub">{{ r.mulai }}–{{ r.selesai }} WITA</span>
+              </td>
+              <td data-label="Pemohon">
+                <strong>{{ r.pemohon }}</strong>
+                <span class="table-sub">{{ role_labels[r.role_pemohon] }}{% if r.nim_nip %} · {{ r.nim_nip }}{% endif %}</span>
+              </td>
+              <td data-label="Keperluan" class="td-purpose">{{ r.keperluan }}</td>
+              <td data-label="Tindakan">
+                <div class="row-actions">
+                  <a class="btn btn-ghost btn-xs" href="{{ url_for('main.reservation_detail', reservation_id=r.id) }}">Detail</a>
+                  {% if r.status == 'processing' %}
+                    <form method="post" action="{{ url_for('main.approve_reservation', reservation_id=r.id) }}">
+                      <button class="btn btn-success btn-xs" type="submit">Setujui</button>
+                    </form>
+                    <details class="inline-details details-right">
+                      <summary class="btn btn-outline btn-xs">Tolak</summary>
+                      <form method="post" action="{{ url_for('main.reject_reservation', reservation_id=r.id) }}" class="mini-form pop-form">
+                        <label class="field"><span>Alasan penolakan</span><textarea name="alasan" rows="2" required></textarea></label>
+                        <button class="btn btn-danger btn-xs btn-block" type="submit">Kirim penolakan</button>
+                      </form>
+                    </details>
+                  {% endif %}
+                  {% if r.status in ['processing', 'confirmed'] %}
+                    <details class="inline-details details-right">
+                      <summary class="btn btn-ghost btn-xs">Batalkan</summary>
+                      <form method="post" action="{{ url_for('main.cancel_reservation', reservation_id=r.id) }}" class="mini-form pop-form">
+                        <label class="field"><span>Alasan pembatalan</span><textarea name="alasan" rows="2" required></textarea></label>
+                        <button class="btn btn-danger btn-xs btn-block" type="submit">Batalkan reservasi</button>
+                      </form>
+                    </details>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6">
+                <div class="empty-inline">
+                  <span class="empty-check">⌕</span>
+                  <div><strong>Tidak ada reservasi yang cocok</strong><p>Ubah filter status, gedung, tanggal, atau kata kunci.</p></div>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

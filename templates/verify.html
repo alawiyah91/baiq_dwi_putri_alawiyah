@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set meta = status_meta[reservation.status] %}
+{% block title %}Verifikasi {{ reservation.kode_booking }} · IDB Bali{% endblock %}
+
+{% block content %}
+<section class="verify-wrap">
+  <div class="container verify-container">
+    <div class="verify-card">
+      <div class="verify-head">
+        <div class="proof-brand">
+          <span class="brand-mark brand-mark-logo"><img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo IDB Bali"></span>
+          <div><strong>Verifikasi Bukti Peminjaman</strong><small>Institut Desain &amp; Bisnis Bali</small></div>
+        </div>
+        <span class="badge {{ meta.tone }} badge-lg">{{ meta.label }}</span>
+      </div>
+
+      <div class="verify-hero status-{{ meta.tone }}">
+        <span class="verify-symbol">{{ '✓' if reservation.status == 'confirmed' else ('!' if reservation.status in ['processing', 'cancelled'] else '×') }}</span>
+        <div>
+          <h1>
+            {% if reservation.status == 'confirmed' %}
+              Bukti reservasi valid
+            {% elif reservation.status == 'processing' %}
+              Reservasi belum final
+            {% elif reservation.status == 'cancelled' %}
+              Reservasi telah dibatalkan
+            {% else %}
+              Reservasi tidak berhasil
+            {% endif %}
+          </h1>
+          <p>
+            {% if reservation.status == 'confirmed' %}
+              Slot ruang tercatat eksklusif untuk pemohon berikut pada waktu yang tertera.
+            {% elif reservation.status == 'processing' %}
+              Permintaan masih menunggu verifikasi Petugas Sarpras. Bukti belum dapat digunakan.
+            {% else %}
+              Kode ini tidak merujuk pada peminjaman aktif. Hubungi Sarpras bila Anda memerlukan klarifikasi.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="verify-grid">
+        <div class="proof-field"><span>Kode booking</span><strong class="mono">{{ reservation.kode_booking }}</strong></div>
+        <div class="proof-field"><span>Ruang</span><strong>{{ reservation.nama_ruang }} ({{ reservation.kode }})</strong><small>{{ reservation.gedung }} · Lantai {{ reservation.lantai }}</small></div>
+        <div class="proof-field"><span>Tanggal</span><strong>{{ reservation.tanggal|tanggal_id }}</strong><small>{{ reservation.mulai }}–{{ reservation.selesai }} WITA</small></div>
+        <div class="proof-field"><span>Pemohon</span><strong>{{ reservation.pemohon }}</strong><small>Data pribadi dibatasi sesuai prinsip Data Privacy</small></div>
+      </div>
+
+      <div class="verify-foot">
+        <span>Diverifikasi langsung dari basis data IDB Bali · {{ now.strftime('%d/%m/%Y %H:%M') }} WITA</span>
+        <a class="btn btn-outline btn-sm" href="{{ url_for('main.index') }}">Buka IDB Bali</a>
+      </div>
+    </div>
+
+    <p class="verify-note">Halaman ini dapat diakses publik melalui QR pada bukti peminjaman. Hanya menampilkan informasi yang diperlukan untuk verifikasi di pintu ruang.</p>
+  </div>
+</section>
+{% endblock %}

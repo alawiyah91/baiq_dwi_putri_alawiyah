@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · IDB Bali{% endblock %}
+
+{% block content %}
+<section class="error-wrap">
+  <div class="container error-card">
+    <span class="error-code">{{ code }}</span>
+    <h1>{{ title }}</h1>
+    <p>{{ message }}</p>
+    <div class="error-actions">
+      <a class="btn btn-primary" href="{{ url_for('main.index') }}">Kembali ke beranda</a>
+      {% if current_user %}
+        <a class="btn btn-outline" href="{{ url_for('main.dashboard') }}">Reservasi saya</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

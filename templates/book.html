@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Pesan {{ room.nama }} · IDB Bali{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{{ url_for('main.index', tanggal=form.tanggal, mulai=form.mulai, selesai=form.selesai) }}">Cari ruang</a>
+      <span>/</span>
+      <span>{{ room.kode }}</span>
+    </nav>
+    <div class="page-head-row">
+      <div>
+        <span class="section-kicker">Formulir reservasi</span>
+        <h1>Pesan {{ room.nama }}</h1>
+        <p>{{ room.gedung }} · Lantai {{ room.lantai }} · Kapasitas {{ room.kapasitas }} orang</p>
+      </div>
+      <span class="badge {{ 'warning' if room.butuh_approval else 'success' }}">{{ 'Perlu approval Sarpras' if room.butuh_approval else 'Konfirmasi langsung' }}</span>
+    </div>
+  </div>
+</section>
+
+<section class="container booking-layout">
+  <aside class="booking-aside">
+    <div class="panel room-summary">
+      <div class="room-summary-top">
+        <span class="room-code">{{ room.kode }}</span>
+        <span class="chip">{{ room.kategori }}</span>
+      </div>
+      <h2>{{ room.nama }}</h2>
+      <p class="room-desc">{{ room.deskripsi }}</p>
+      <dl class="detail-list">
+        <div><dt>Gedung</dt><dd>{{ room.gedung }}</dd></div>
+        <div><dt>Lantai</dt><dd>{{ room.lantai }}</dd></div>
+        <div><dt>Kapasitas</dt><dd>{{ room.kapasitas }} orang</dd></div>
+        <div><dt>Kategori</dt><dd>{{ room.kategori }}</dd></div>
+      </dl>
+
+      <div class="rule-box">
+        <h3>Ketentuan ruang</h3>
+        <ul>
+          {% if room.butuh_dokumen %}<li>Wajib melampirkan dokumen permohonan atau rekomendasi dosen pembimbing.</li>{% endif %}
+          {% if room.butuh_approval %}<li>Reservasi berstatus <strong>menunggu verifikasi</strong> hingga disetujui Petugas Sarpras.</li>{% endif %}
+          {% if not room.butuh_dokumen and not room.butuh_approval %}<li>Tidak memerlukan dokumen tambahan. Slot langsung dikonfirmasi.</li>{% endif %}
+          <li>Pembatalan mandiri hanya bisa dilakukan sebelum waktu mulai.</li>
+          <li>Slot yang sama tidak dapat dialokasikan ke dua pemohon.</li>
+        </ul>
+      </div>
+
+      <div class="schedule-box">
+        <div class="schedule-head">
+          <h3>Jadwal {{ schedule_day|tanggal_short }}</h3>
+          <span>{{ schedule|length }} reservasi aktif</span>
+        </div>
+        {% if schedule %}
+          <div class="schedule-list">
+            {% for slot in schedule %}
+              <div class="schedule-row">
+                <span class="schedule-time">{{ slot.mulai }}–{{ slot.selesai }}</span>
+                <span class="schedule-state {{ 'is-pending' if slot.status == 'processing' else 'is-busy' }}">
+                  {{ 'Menunggu verifikasi' if slot.status == 'processing' else 'Terisi' }}
+                </span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="schedule-empty">Belum ada reservasi aktif pada tanggal ini. Seluruh jam tersedia.</p>
+        {% endif %}
+      </div>
+    </div>
+  </aside>
+
+  <div class="booking-main">
+    {% if errors %}
+      <div class="alert alert-danger">
+        <strong>Periksa kembali data reservasi.</strong>
+        <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="panel booking-form" id="bookingForm">
+      <div class="panel-head">
+        <div>
+          <span class="section-kicker">Detail peminjaman</span>
+          <h2>Lengkapi informasi</h2>
+        </div>
+        <span class="step-pill">Langkah 2 dari 2</span>
+      </div>
+
+      <div class="form-section">
+        <h3>Waktu pemakaian</h3>
+        <div class="form-grid-3">
+          <label class="field">
+            <span>Tanggal</span>
+            <input type="date" name="tanggal" id="bookingTanggal" value="{{ form.tanggal }}" min="{{ today_iso }}" required>
+          </label>
+          <label class="field">
+            <span>Jam mulai</span>
+            <input type="time" name="mulai" id="bookingMulai" value="{{ form.mulai }}" step="900" required>
+          </label>
+          <label class="field">
+            <span>Jam selesai</span>
+            <input type="time" name="selesai" id="bookingSelesai" value="{{ form.selesai }}" step="900" required>
+          </label>
+        </div>
+        <p class="form-hint">Jam mulai harus lebih awal dari jam selesai. Reservasi tersedia pukul 06.00–23.00 WITA.</p>
+      </div>
+
+      <div class="form-section">
+        <h3>Keperluan</h3>
+        <label class="field">
+          <span>Deskripsi kegiatan</span>
+          <textarea name="keperluan" rows="4" placeholder="Contoh: Diskusi kelompok mata kuliah Desain Komunikasi Visual, 8 peserta." required>{{ form.keperluan }}</textarea>
+        </label>
+        <label class="field field-narrow">
+          <span>Jumlah peserta</span>
+          <input type="number" name="jumlah_peserta" value="{{ form.jumlah_peserta }}" min="1" max="{{ room.kapasitas }}" required>
+        </label>
+      </div>
+
+      <div class="form-section">
+        <h3>Dokumen pendukung {% if not room.butuh_dokumen %}<span class="optional">(opsional)</span>{% endif %}</h3>
+        <label class="upload-box" for="dokumen">
+          <input type="file" name="dokumen" id="dokumen" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" {{ 'required' if room.butuh_dokumen }}>
+          <span class="upload-icon">↑</span>
+          <span class="upload-text">
+            <strong>Lampirkan dokumen permohonan</strong>
+            <small>PDF, JPG, PNG, DOC, atau DOCX · maksimal 8 MB</small>
+          </span>
+          <span class="upload-name" id="uploadName">Belum ada file</span>
+        </label>
+        {% if room.butuh_dokumen %}
+          <p class="form-hint">Ruang ini mewajibkan rekomendasi dosen pembimbing atau surat permohonan.</p>
+        {% endif %}
+      </div>
+
+      <label class="check-line">
+        <input type="checkbox" required>
+        <span>Saya memastikan data yang diisi benar dan memahami ketentuan peminjaman ruang IDB Bali.</span>
+      </label>
+
+      <div class="form-actions">
+        <a class="btn btn-ghost" href="{{ url_for('main.index', tanggal=form.tanggal, mulai=form.mulai, selesai=form.selesai) }}">Batal</a>
+        <button class="btn btn-primary" type="submit" id="bookingSubmit">Kirim permintaan reservasi</button>
+      </div>
+    </form>
+
+    <div class="integrity-note">
+      <span class="integrity-mark">✓</span>
+      <div>
+        <strong>Jaminan alokasi eksklusif</strong>
+        <p>Permintaan diproses dalam transaksi database. Jika dua orang mengirim pada slot yang sama, tepat satu yang berhasil dan satunya menerima status konflik.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Reservasi saya · IDB Bali{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div class="container">
+    <span class="section-kicker">Ruang kerja pribadi</span>
+    <div class="page-head-row">
+      <div>
+        <h1>Halo, {{ current_user.nama.split()[0] }}.</h1>
+        <p>Kelola semua reservasi ruang Anda dalam satu tempat.</p>
+      </div>
+      <div class="head-actions">
+        <span class="role-chip">{{ role_labels[current_user.role] }}{% if current_user.nim_nip %} · {{ current_user.nim_nip }}{% endif %}</span>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('main.index') }}">Pesan ruang baru</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container dashboard-body">
+  <div class="stat-grid">
+    <div class="stat-card stat-highlight">
+      <span class="stat-label">Akan datang</span>
+      <strong>{{ stats.upcoming }}</strong>
+      <span class="stat-note">reservasi aktif</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Terkonfirmasi</span>
+      <strong>{{ stats.confirmed }}</strong>
+      <span class="stat-note">total sepanjang waktu</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Menunggu verifikasi</span>
+      <strong>{{ stats.processing }}</strong>
+      <span class="stat-note">perlu approval Sarpras</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Riwayat selesai</span>
+      <strong>{{ stats.history }}</strong>
+      <span class="stat-note">dibatalkan / gagal</span>
+    </div>
+  </div>
+
+  <div class="list-head">
+    <div>
+      <span class="section-kicker">Daftar reservasi</span>
+      <h2>Semua peminjaman Anda</h2>
+    </div>
+    <span class="muted-note">{{ reservations|length }} catatan</span>
+  </div>
+
+  {% if reservations %}
+    <div class="reservation-list">
+      {% for r in reservations %}
+        {% set meta = status_meta[r.status] %}
+        <article class="reservation-card status-border-{{ meta.tone }}">
+          <div class="date-block">
+            <strong>{{ r.tanggal[8:10] }}</strong>
+            <span>{{ r.tanggal|tanggal_short }}</span>
+          </div>
+          <div class="reservation-body">
+            <div class="reservation-top">
+              <div>
+                <h3>{{ r.nama_ruang }}</h3>
+                <p>{{ r.kode }} · {{ r.gedung }} · Lantai {{ r.lantai }}</p>
+              </div>
+              <span class="badge {{ meta.tone }}">{{ meta.label }}</span>
+            </div>
+            <div class="reservation-meta">
+              <span class="meta-item"><b>{{ r.mulai }}–{{ r.selesai }}</b> WITA</span>
+              <span class="meta-item">{{ r.kode_booking }}</span>
+              <span class="meta-item">{{ r.jumlah_peserta }} peserta</span>
+            </div>
+            <p class="reservation-purpose">{{ r.keperluan }}</p>
+          </div>
+          <div class="reservation-actions">
+            <a class="btn btn-outline btn-sm" href="{{ url_for('main.reservation_detail', reservation_id=r.id) }}">Lihat detail</a>
+            {% if r.status == 'confirmed' %}
+              <a class="btn btn-ghost btn-sm" href="{{ url_for('main.reservation_qr', reservation_id=r.id) }}" download="qr-{{ r.kode_booking }}.png">QR</a>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">◫</span>
+      <h3>Belum ada reservasi</h3>
+      <p>Mulai dengan mencari ruang yang kosong sesuai tanggal dan kapasitas kebutuhan Anda.</p>
+      <a class="btn btn-primary" href="{{ url_for('main.index') }}">Cari ruang</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,6 @@
+<nav class="admin-tabs" aria-label="Navigasi Sarpras">
+  <a class="admin-tab {{ 'active' if admin_tab == 'overview' }}" href="{{ url_for('main.admin_dashboard') }}">Ringkasan</a>
+  <a class="admin-tab {{ 'active' if admin_tab == 'reservations' }}" href="{{ url_for('main.admin_reservations') }}">Reservasi</a>
+  <a class="admin-tab {{ 'active' if admin_tab == 'rooms' }}" href="{{ url_for('main.admin_rooms') }}">Ruang &amp; aturan</a>
+  <a class="admin-tab {{ 'active' if admin_tab == 'audit' }}" href="{{ url_for('main.admin_audit') }}">Audit log</a>
+</nav>

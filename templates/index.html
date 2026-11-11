@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}IDB Bali · Temukan & pesan ruang kampus{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-slideshow" id="heroSlideshow" aria-hidden="true">
+    <div class="hero-slide is-active effect-in" style="background-image: url('{{ url_for('static', filename='img/hero/hero-1.jpg') }}')"></div>
+    <div class="hero-slide effect-out" style="background-image: url('{{ url_for('static', filename='img/hero/hero-2.jpg') }}')"></div>
+    <div class="hero-slide effect-in" style="background-image: url('{{ url_for('static', filename='img/hero/hero-3.jpg') }}')"></div>
+  </div>
+  <div class="hero-overlay" aria-hidden="true"></div>
+  <div class="hero-glow hero-glow-a" aria-hidden="true"></div>
+  <div class="hero-glow hero-glow-b" aria-hidden="true"></div>
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-title">IDB Bali</span>
+        <span class="hero-eyebrow-sub">Institut Desain &amp; Bisnis Bali</span>
+      </div>
+      <h1>Cari ruang.<br><em>Pastikan</em> jadwalnya.</h1>
+      <p class="hero-lead">Temukan studio, lab, dan ruang belajar yang benar-benar kosong. Satu slot, satu pemilik — tanpa antre konfirmasi manual dan tanpa bentrok jadwal.</p>
+      <div class="hero-actions">
+        <a class="btn btn-accent" href="#cari-ruang">Cari ruang sekarang</a>
+        {% if not current_user %}
+          <a class="btn btn-outline-light" href="{{ url_for('main.register') }}">Buat akun kampus</a>
+        {% else %}
+          <a class="btn btn-outline-light" href="{{ url_for('main.dashboard') }}">Lihat reservasi saya</a>
+        {% endif %}
+      </div>
+      <div class="hero-metrics">
+        <div><strong>{{ stats.rooms }}</strong><span>ruang &amp; fasilitas</span></div>
+        <div><strong>2</strong><span>lokasi kampus</span></div>
+        <div><strong>0</strong><span>double booking</span></div>
+      </div>
+    </div>
+
+    <div class="hero-art" aria-hidden="true">
+      <div class="mock-board">
+        {% set hero_slides = hero_rooms|batch(5)|list %}
+        <div class="mock-head">
+          <span class="mock-dot"></span>
+          <span>Ketersediaan hari ini</span>
+          <span class="mock-live" id="heroLiveStamp">live · {{ hero_updated }}</span>
+        </div>
+        {% for slide in hero_slides %}
+          <div class="hero-live-slide {{ 'is-active' if loop.first }}">
+            {% for room in slide %}
+              <div class="mock-row hero-live-row" data-room-id="{{ room.id }}">
+                <span class="mock-time">{{ room.kode }}</span>
+                <div class="mock-room">
+                  <b>{{ room.nama }}</b>
+                  <small>{{ room.gedung }} · Lt. {{ room.lantai }} · {{ room.detail }}</small>
+                </div>
+                <span class="mock-status {{ 'ok' if room.status == 'kosong' else 'fill' }}">{{ room.label }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+        <div class="hero-live-foot">
+          <span class="hero-live-note"><span class="live-dot"></span> Live dari jadwal kampus</span>
+          <div class="hero-live-dots" id="heroLiveDots">
+            {% for slide in hero_slides %}<span class="{{ 'active' if loop.first }}"></span>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="search-zone" id="cari-ruang">
+  <div class="container">
+    <form class="search-panel" method="get" action="{{ url_for('main.index') }}">
+      <div class="search-panel-head">
+        <div>
+          <h2>Pencarian slot</h2>
+          <p>Pilih tanggal, waktu, dan kebutuhan ruang Anda.</p>
+        </div>
+        <span class="slot-note"><span class="pulse-dot"></span> Slot dikunci secara eksklusif saat dipesan</span>
+      </div>
+      <div class="search-grid">
+        <label class="field">
+          <span>Tanggal</span>
+          <input type="date" name="tanggal" value="{{ filters.tanggal }}" min="{{ today_iso }}" required>
+        </label>
+        <label class="field">
+          <span>Mulai</span>
+          <input type="time" name="mulai" id="searchMulai" value="{{ filters.mulai }}" step="900" required>
+        </label>
+        <label class="field">
+          <span>Selesai</span>
+          <input type="time" name="selesai" id="searchSelesai" value="{{ filters.selesai }}" step="900" required>
+        </label>
+        <label class="field">
+          <span>Gedung</span>
+          <select name="gedung">
+            <option value="">Semua gedung</option>
+            {% for b in buildings %}
+              <option value="{{ b }}" {{ 'selected' if filters.gedung == b }}>{{ b }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Kapasitas minimal</span>
+          <select name="kapasitas">
+            <option value="">Berapa saja</option>
+            {% for n in [10, 20, 30, 40, 60, 100, 200] %}
+              <option value="{{ n }}" {{ 'selected' if filters.kapasitas == n }}>≥ {{ n }} orang</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field field-search">
+          <span>Cari ruang</span>
+          <input type="search" name="q" value="{{ filters.q }}" placeholder="Nama, kode, atau kategori">
+        </label>
+        <div class="search-submit">
+          <button class="btn btn-primary btn-block" type="submit">Cari slot</button>
+        </div>
+      </div>
+      {% if not time_valid %}
+        <p class="form-hint form-hint-danger">Jam selesai harus lebih akhir dari jam mulai.</p>
+      {% endif %}
+    </form>
+  </div>
+</section>
+
+<section class="results-section">
+  <div class="container">
+    <div class="results-head">
+      <div>
+        <span class="section-kicker">Hasil pencarian</span>
+        <h2>{{ filters.tanggal|tanggal_id }}</h2>
+        <p>{{ filters.mulai }}–{{ filters.selesai }} WITA · {{ rooms|selectattr('available')|list|length }} dari {{ rooms|length }} ruang siap dipakai</p>
+      </div>
+      <div class="building-tabs" role="group" aria-label="Filter gedung">
+        <a class="tab {{ 'active' if not filters.gedung }}"
+           href="{{ url_for('main.index') }}?tanggal={{ filters.tanggal }}&mulai={{ filters.mulai }}&selesai={{ filters.selesai }}{% if filters.kategori %}&kategori={{ filters.kategori|urlencode }}{% endif %}{% if filters.kapasitas %}&kapasitas={{ filters.kapasitas }}{% endif %}{% if filters.q %}&q={{ filters.q|urlencode }}{% endif %}">Semua</a>
+        {% for b in buildings %}
+          <a class="tab {{ 'active' if filters.gedung == b }}"
+             href="{{ url_for('main.index') }}?tanggal={{ filters.tanggal }}&mulai={{ filters.mulai }}&selesai={{ filters.selesai }}&gedung={{ b|urlencode }}{% if filters.kategori %}&kategori={{ filters.kategori|urlencode }}{% endif %}{% if filters.kapasitas %}&kapasitas={{ filters.kapasitas }}{% endif %}{% if filters.q %}&q={{ filters.q|urlencode }}{% endif %}">{{ b }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if rooms %}
+      <div class="room-grid">
+        {% for room in rooms %}
+          <article class="room-card {{ 'is-locked' if room.locked }}">
+            <div class="room-card-top">
+              <span class="room-code">{{ room.kode }}</span>
+              <span class="chip">{{ room.kategori }}</span>
+              {% if room.locked %}
+                <span class="badge muted">Area terbatas</span>
+              {% elif room.available %}
+                <span class="badge success">Tersedia</span>
+              {% elif time_valid %}
+                <span class="badge danger">Terisi</span>
+              {% else %}
+                <span class="badge muted">Jam tidak valid</span>
+              {% endif %}
+            </div>
+
+            <div class="room-heading">
+              <h3>{{ room.nama }}</h3>
+              <p class="room-meta">
+                <span>{{ room.gedung }}</span>
+                <span>Lantai {{ room.lantai }}</span>
+                <span>{{ room.kapasitas }} orang</span>
+              </p>
+            </div>
+            <p class="room-desc">{{ room.deskripsi }}</p>
+
+            <div class="room-status-row">
+              {% if room.busy %}
+                <div class="busy-list">
+                  <span class="busy-label">Terpakai</span>
+                  {% for slot in room.busy %}
+                    <span class="busy-chip">{{ slot.mulai }}–{{ slot.selesai }}</span>
+                  {% endfor %}
+                </div>
+              {% elif room.available %}
+                <div class="free-list"><span class="free-dot"></span> Slot {{ filters.mulai }}–{{ filters.selesai }} masih kosong</div>
+              {% endif %}
+
+              <div class="room-requirements">
+                {% if room.butuh_dokumen %}<span class="req">Dokumen pendukung</span>{% endif %}
+                {% if room.butuh_approval %}<span class="req">Approval Sarpras</span>{% endif %}
+                {% if not room.butuh_dokumen and not room.butuh_approval %}<span class="req req-soft">Tanpa dokumen tambahan</span>{% endif %}
+              </div>
+            </div>
+
+            <div class="room-card-foot">
+              {% if room.locked %}
+                <span class="muted-note">Hanya dikelola Petugas Sarpras.</span>
+              {% else %}
+                <a class="btn {{ 'btn-primary' if room.available else 'btn-outline' }} btn-block"
+                   href="{{ url_for('main.book', room_id=room.id, tanggal=filters.tanggal, mulai=filters.mulai, selesai=filters.selesai) }}">
+                  {{ 'Pesan slot ini' if room.available else 'Pilih jam lain' }}
+                </a>
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <span class="empty-icon">⌕</span>
+        <h3>Tidak ada ruang yang cocok</h3>
+        <p>Coba longgarkan filter kapasitas, gedung, atau kata kunci pencarian.</p>
+        <a class="btn btn-primary" href="{{ url_for('main.index') }}">Reset pencarian</a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="how-section">
+  <div class="container">
+    <div class="section-heading">
+      <span class="section-kicker">Cara kerja</span>
+      <h2>Tiga langkah, satu kepastian.</h2>
+      <p>Alur yang sengaja dibuat singkat. Keputusan alokasi dilakukan di database, bukan menunggu balasan manual.</p>
+    </div>
+    <div class="how-grid">
+      <div class="how-card">
+        <span class="how-num">01</span>
+        <h3>Cari slot</h3>
+        <p>Filter gedung, tanggal, kapasitas, dan rentang waktu. Lihat slot yang benar-benar kosong secara langsung.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-num">02</span>
+        <h3>Kunci eksklusif</h3>
+        <p>Transaksi database memastikan hanya satu pemohon yang mendapat slot. Tidak ada double booking.</p>
+      </div>
+      <div class="how-card">
+        <span class="how-num">03</span>
+        <h3>Bawa bukti QR</h3>
+        <p>Reservasi terkonfirmasi menghasilkan bukti peminjaman ber-QR yang bisa diverifikasi petugas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

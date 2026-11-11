@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% set admin_tab = 'rooms' %}
+{% block title %}Ruang & aturan · IDB Bali{% endblock %}
+
+{% block content %}
+<section class="page-head page-head-admin">
+  <div class="container">
+    <span class="section-kicker">Ruang kerja Sarpras</span>
+    <div class="page-head-row">
+      <div>
+        <h1>Ruang &amp; aturan</h1>
+        <p>Atur kapasitas dan ketentuan khusus. Perubahan tercatat pada audit log.</p>
+      </div>
+      <span class="role-chip">{{ rooms|length }} ruang terdaftar</span>
+    </div>
+    {% include "_admin_tabs.html" %}
+  </div>
+</section>
+
+<section class="container dashboard-body">
+  {% for gedung, items in rooms|groupby('gedung') %}
+    <div class="room-group">
+      <div class="room-group-head">
+        <div>
+          <span class="section-kicker">{{ items|length }} ruang</span>
+          <h2>{{ gedung }}</h2>
+        </div>
+        <span class="muted-note">{{ 'Jl. Tukad Barito No. 5X, Panjer' if 'Barito' in gedung else 'Jl. Tukad Batanghari No. 29, Denpasar' }}</span>
+      </div>
+
+      <div class="admin-room-grid">
+        {% for room in items %}
+          <form class="panel admin-room-card {{ 'is-inactive' if not room.aktif }}" method="post" action="{{ url_for('main.admin_update_room', room_id=room.id) }}">
+            <div class="admin-room-head">
+              <div>
+                <span class="room-code">{{ room.kode }}</span>
+                <span class="chip">{{ room.kategori }}</span>
+              </div>
+              <span class="badge {{ 'success' if room.aktif else 'muted' }} badge-xs">{{ 'Aktif' if room.aktif else 'Nonaktif' }}</span>
+            </div>
+            <h3>{{ room.nama }}</h3>
+            <p class="room-desc">{{ room.deskripsi }}</p>
+            <p class="admin-room-meta">Lantai {{ room.lantai }} · {{ room.kategori }}</p>
+
+            <label class="field field-inline">
+              <span>Kapasitas</span>
+              <input type="number" name="kapasitas" value="{{ room.kapasitas }}" min="1" max="1000">
+            </label>
+
+            <div class="switch-list">
+              <label class="switch-row">
+                <input type="checkbox" name="butuh_dokumen" {{ 'checked' if room.butuh_dokumen }}>
+                <span class="switch-ui"></span>
+                <span class="switch-text"><strong>Wajib dokumen</strong><small>Surat permohonan / rekomendasi dosen</small></span>
+              </label>
+              <label class="switch-row">
+                <input type="checkbox" name="butuh_approval" {{ 'checked' if room.butuh_approval }}>
+                <span class="switch-ui"></span>
+                <span class="switch-text"><strong>Perlu approval</strong><small>Status menunggu verifikasi Sarpras</small></span>
+              </label>
+              <label class="switch-row">
+                <input type="checkbox" name="terbatas" {{ 'checked' if room.terbatas }}>
+                <span class="switch-ui"></span>
+                <span class="switch-text"><strong>Area terbatas</strong><small>Hanya dapat dikelola Sarpras</small></span>
+              </label>
+              <label class="switch-row">
+                <input type="checkbox" name="aktif" {{ 'checked' if room.aktif }}>
+                <span class="switch-ui"></span>
+                <span class="switch-text"><strong>Ruangan aktif</strong><small>Tampil pada hasil pencarian</small></span>
+              </label>
+            </div>
+
+            <button class="btn btn-primary btn-sm btn-block" type="submit">Simpan pengaturan</button>
+          </form>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

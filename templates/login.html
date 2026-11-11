@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Masuk · IDB Bali{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<section class="auth-wrap">
+  <div class="container auth-grid">
+    <div class="auth-aside">
+      <span class="eyebrow eyebrow-light"><span class="pulse-dot"></span> Portal civitas akademika</span>
+      <h1>Satu akun untuk seluruh ruang kampus.</h1>
+      <p>Masuk untuk memesan studio, lab, ruang teori, hingga aula. Status reservasi tampil real-time dan bukti QR langsung tersedia.</p>
+      <ul class="auth-points">
+        <li><span>✓</span> Alokasi slot eksklusif tanpa bentrok</li>
+        <li><span>✓</span> Pembatalan mandiri sebelum waktu mulai</li>
+        <li><span>✓</span> Riwayat dan audit reservasi yang rapi</li>
+      </ul>
+      <div class="auth-quote">
+        <p>“Tidak perlu lagi bertanya berulang kali ke petugas. Slot yang tampil kosong memang bisa dipesan.”</p>
+        <span>Rani — Mahasiswa IDB Bali</span>
+      </div>
+    </div>
+
+    <div class="auth-card">
+      <span class="section-kicker">Masuk</span>
+      <h2>Selamat datang kembali</h2>
+      <p class="auth-sub">Gunakan email kampus dan kata sandi Anda.</p>
+
+      <form method="post" action="{{ url_for('main.login', next=request.args.get('next')) }}" class="stack-form">
+        <label class="field">
+          <span>Email</span>
+          <input type="email" name="email" placeholder="nama@idb.ac.id" autocomplete="email" required autofocus>
+        </label>
+        <label class="field">
+          <span>Kata sandi</span>
+          <input type="password" name="password" placeholder="Kata sandi" autocomplete="current-password" required>
+        </label>
+        <button class="btn btn-primary btn-block" type="submit">Masuk ke IDB Bali</button>
+      </form>
+
+      <div class="demo-box">
+        <div class="demo-head">
+          <span>Akun demo</span>
+          <small>Kata sandi: demo123</small>
+        </div>
+        <div class="demo-grid">
+          <button type="button" class="demo-account" data-email="mahasiswa@idb.ac.id" data-password="demo123">
+            <strong>Rani</strong><span>Mahasiswa</span>
+          </button>
+          <button type="button" class="demo-account" data-email="dosen@idb.ac.id" data-password="demo123">
+            <strong>Ayu</strong><span>Dosen</span>
+          </button>
+          <button type="button" class="demo-account" data-email="sarpras@idb.ac.id" data-password="demo123">
+            <strong>Dedi</strong><span>Sarpras</span>
+          </button>
+          <button type="button" class="demo-account" data-email="superadmin@idb.ac.id" data-password="demo123">
+            <strong>Admin</strong><span>Super Admin</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="auth-switch">Belum punya akun? <a href="{{ url_for('main.register') }}">Daftar sekarang</a></p>
+    </div>
+  </div>
+</section>
+{% endblock %}

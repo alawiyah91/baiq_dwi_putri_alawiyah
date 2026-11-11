@@ -26,8 +26,14 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_DB = os.path.join(BASE_DIR, "instance", "idb_rooms.db")
-DEFAULT_UPLOADS = os.path.join(BASE_DIR, "uploads")
+ON_VERCEL = bool(os.environ.get("VERCEL"))
+if ON_VERCEL:
+    # Vercel Functions hanya mengizinkan penulisan ke /tmp (ephemeral).
+    DEFAULT_DB = "/tmp/idb_rooms.db"
+    DEFAULT_UPLOADS = "/tmp/uploads"
+else:
+    DEFAULT_DB = os.path.join(BASE_DIR, "instance", "idb_rooms.db")
+    DEFAULT_UPLOADS = os.path.join(BASE_DIR, "uploads")
 
 ROLES = ("mahasiswa", "dosen", "sarpras", "superadmin")
 ACTIVE_STATUSES = ("processing", "confirmed")
@@ -1199,6 +1205,7 @@ def create_app(test_config=None):
         MAX_CONTENT_LENGTH=MAX_DOC_BYTES,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=ON_VERCEL,
     )
     if test_config:
         app.config.update(test_config)

@@ -38,6 +38,21 @@ Database SQLite dan 28 ruangan contoh dibuat otomatis saat aplikasi pertama kali
 | Petugas Sarpras | `sarpras@idb.ac.id` | `demo123` |
 | Super Admin | `superadmin@idb.ac.id` | `demo123` |
 
+## Deploy ke Vercel
+
+Vercel mendeteksi Flask dari `requirements.txt` dan memakai `app` pada `app.py` sebagai entrypoint WSGI.
+
+1. Import repo ini di Vercel (framework preset: **Flask**, tanpa build command).
+2. Set environment variable **`SECRET_KEY`** dengan nilai acak yang kuat.
+3. Deploy. Semua route, template, dan aset statis dilayani dari function Flask.
+
+Catatan penting untuk Vercel:
+
+- Filesystem function hanya dapat ditulis di `/tmp`. Saat `VERCEL=1`, aplikasi otomatis memakai `/tmp/idb_rooms.db` dan `/tmp/uploads`.
+- Data SQLite dan dokumen unggahan bersifat **ephemeral**: hilang saat instance dingin/deploy ulang. Untuk produksi, gunakan database eksternal (PostgreSQL/Turso) dan object storage (Vercel Blob/S3).
+- `_write_lock` hanya menjamin serialisasi dalam satu instance. Untuk trafik multi-instance, pindahkan jaminan anti-overlap ke database (row lock/constraint).
+- `.vercelignore` mengecualikan `instance/`, `uploads/`, dan file runtime lain agar bundle tetap kecil.
+
 ## Fitur Release 1.0
 
 - **Pencarian slot** berdasarkan tanggal, rentang jam, gedung, kapasitas, kategori, dan kata kunci.
